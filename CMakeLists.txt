@@ -110,6 +110,38 @@ if(WITH_GPU_CUDA)
         include_directories(${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}) 
         add_definitions(-DGPU_CUDA_ENABLED)
         add_definitions(-DGPU_ENABLED)
+        
+        # ============================================================
+        # OPTIMIZATION: Set CUDA architecture for RTX 40xx/50xx series
+        # ============================================================
+        # RTX 4080/4090: sm_89 (Compute Capability 8.9)
+        # RTX 5080/5090: sm_90 (Compute Capability 9.0)
+        # This ensures modern GPU features are utilized
+        
+        if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+            # Auto-detect if possible, otherwise default to modern architectures
+            set(CMAKE_CUDA_ARCHITECTURES "89;90")
+            message(STATUS "CUDA Architectures set to: ${CMAKE_CUDA_ARCHITECTURES}")
+            message(STATUS "  - sm_89: RTX 4080/4090")
+            message(STATUS "  - sm_90: RTX 5080/5090")
+            message(STATUS "Change with: -DCMAKE_CUDA_ARCHITECTURES=\"89\" for specific GPU")
+        endif()
+        
+        # ============================================================
+        # OPTIMIZATION: CUDA compilation flags for performance
+        # ============================================================
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --use_fast_math")
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --extra-device-vectorization")
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xptxas=-v")  # Verbose register usage
+        
+        # Optimization level
+        set(CMAKE_CUDA_FLAGS_RELEASE "${CMAKE_CUDA_FLAGS_RELEASE} -O3")
+        
+        # Allow more registers per thread for complex kernels
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --maxrregcount=128")
+        
+        message(STATUS "CUDA Optimization Flags: ${CMAKE_CUDA_FLAGS}")
+        
     else()
         message(STATUS "No CUDA compiler found")
     endif()
@@ -202,5 +234,3 @@ endif()
 
 target_link_libraries(NexusMiner ${OPENSSL_LIBRARIES})
 target_link_libraries(NexusMiner Threads::Threads)
-
-
